@@ -37,8 +37,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
+      '/api': { target: 'https://sba-backend-800876397176.us-central1.run.app', changeOrigin: true },
+      '/uploads': { target: 'https://sba-backend-800876397176.us-central1.run.app', changeOrigin: true },
     },
   },
 });
