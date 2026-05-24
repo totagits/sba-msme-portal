@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
-import { NotificationType } from '@prisma/client';
 
-export async function createNotification(userId: string, type: NotificationType, title: string, message: string, entityType?: string, entityId?: string) {
+
+export async function createNotification(userId: string, type: string, title: string, message: string, entityType?: string, entityId?: string) {
   return prisma.notification.create({ data: { userId, type, title, message, entityType, entityId } });
 }
 

@@ -34,7 +34,7 @@ export class AnalyticsController {
   async msmesByCounty(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const counties = await prisma.county.findMany({ select: { id: true, name: true } });
-      const data = await Promise.all(counties.map(async (county) => {
+      const data = await Promise.all(counties.map(async (county: any) => {
         const [total, approved, youth, women] = await Promise.all([
           prisma.mSME.count({ where: { countyId: county.id, deletedAt: null } }),
           prisma.mSME.count({ where: { countyId: county.id, deletedAt: null, workflowStatus: 'APPROVED' } }),
@@ -50,7 +50,7 @@ export class AnalyticsController {
   async msmesBySector(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sectors = await prisma.sector.findMany({ select: { id: true, name: true } });
-      const data = await Promise.all(sectors.map(async (sector) => {
+      const data = await Promise.all(sectors.map(async (sector: any) => {
         const total = await prisma.mSME.count({ where: { sectorId: sector.id, deletedAt: null } });
         return { sector: sector.name, sectorId: sector.id, total };
       }));

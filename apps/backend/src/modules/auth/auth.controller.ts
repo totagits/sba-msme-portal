@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authService } from './auth.service';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
+
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -63,7 +63,7 @@ export class AuthController {
       );
 
       await createAuditLog(req, {
-        action: AuditAction.LOGIN,
+        action: 'LOGIN',
         description: `User ${email} logged in`,
       });
 
@@ -139,7 +139,7 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await createAuditLog(req, {
-        action: AuditAction.LOGOUT,
+        action: 'LOGOUT',
         description: `User ${req.user?.email} logged out`,
       });
       res.json({ success: true, message: 'Logged out successfully' });
@@ -200,7 +200,7 @@ export class AuthController {
       const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
       await authService.changePassword(req.user!.userId, currentPassword, newPassword);
       await createAuditLog(req, {
-        action: AuditAction.PASSWORD_CHANGE,
+        action: 'PASSWORD_CHANGE',
         description: 'User changed their password',
       });
       res.json({ success: true, message: 'Password changed successfully.' });

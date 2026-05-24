@@ -99,10 +99,10 @@ export class AuthService {
     });
 
     // Extract roles and permissions
-    const roles = user.userRoles.map(ur => ur.role.name);
+    const roles = user.userRoles.map((ur: any) => ur.role.name);
     const permissions = Array.from(new Set(
-      user.userRoles.flatMap(ur => ur.role.rolePermissions.map(rp => rp.permission.name))
-    ));
+      user.userRoles.flatMap((ur: any) => ur.role.rolePermissions.map((rp: any) => rp.permission.name))
+    )) as string[];
 
     const payload: JWTPayload = {
       userId: user.id,
@@ -159,10 +159,10 @@ export class AuthService {
         throw createError('Invalid refresh token', 401, 'INVALID_TOKEN');
       }
 
-      const roles = user.userRoles.map(ur => ur.role.name);
+      const roles = user.userRoles.map((ur: any) => ur.role.name);
       const permissions = Array.from(new Set(
-        user.userRoles.flatMap(ur => ur.role.rolePermissions.map(rp => rp.permission.name))
-      ));
+        user.userRoles.flatMap((ur: any) => ur.role.rolePermissions.map((rp: any) => rp.permission.name))
+      )) as string[];
 
       const jwtPayload: JWTPayload = { userId: user.id, email: user.email, roles, permissions };
       const newAccessToken = jwt.sign(jwtPayload, config.jwt.secret, {

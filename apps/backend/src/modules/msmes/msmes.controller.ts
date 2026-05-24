@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction, WorkflowStatus, Prisma } from '@prisma/client';
 
 const msmeSchema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters'),
@@ -53,7 +52,7 @@ const workflowSchema = z.object({
 });
 
 function buildWhereClause(query: Record<string, string>) {
-  const where: Prisma.MSMEWhereInput = { deletedAt: null };
+  const where: any = { deletedAt: null };
 
   if (query.search) {
     where.OR = [
@@ -66,11 +65,11 @@ function buildWhereClause(query: Record<string, string>) {
   }
   if (query.countyId) where.countyId = query.countyId;
   if (query.sectorId) where.sectorId = query.sectorId;
-  if (query.msmeCategory) where.msmeCategory = query.msmeCategory as any;
-  if (query.workflowStatus) where.workflowStatus = query.workflowStatus as WorkflowStatus;
-  if (query.formalityStatus) where.formalityStatus = query.formalityStatus as any;
-  if (query.businessType) where.businessType = query.businessType as any;
-  if (query.businessStage) where.businessStage = query.businessStage as any;
+  if (query.msmeCategory) where.msmeCategory = query.msmeCategory;
+  if (query.workflowStatus) where.workflowStatus = query.workflowStatus;
+  if (query.formalityStatus) where.formalityStatus = query.formalityStatus;
+  if (query.businessType) where.businessType = query.businessType;
+  if (query.businessStage) where.businessStage = query.businessStage;
   if (query.isYouthLed === 'true') where.isYouthLed = true;
   if (query.isWomenLed === 'true') where.isWomenLed = true;
   if (query.hasDisabilityInclusion === 'true') where.hasDisabilityInclusion = true;
@@ -229,7 +228,7 @@ export class MSMEController {
       const data = msmeSchema.parse(req.body);
 
       // Duplicate detection
-      const duplicateChecks: Prisma.MSMEWhereInput[] = [
+      const duplicateChecks: any[] = [
         { businessName: { equals: data.businessName, mode: 'insensitive' }, countyId: data.countyId, deletedAt: null },
       ];
       if (data.registrationNumber) {
@@ -260,12 +259,12 @@ export class MSMEController {
         data: {
           ...data,
           createdById: req.user!.userId,
-          workflowStatus: WorkflowStatus.DRAFT,
+          workflowStatus: 'DRAFT',
         },
       });
 
       await createAuditLog(req, {
-        action: AuditAction.CREATE,
+        action: 'CREATE',
         entityType: 'MSME',
         entityId: msme.id,
         newValue: { businessName: msme.businessName, msmeCategory: msme.msmeCategory } as any,
@@ -298,7 +297,7 @@ export class MSMEController {
       });
 
       await createAuditLog(req, {
-        action: AuditAction.UPDATE,
+        action: 'UPDATE',
         entityType: 'MSME',
         entityId: msme.id,
         oldValue: { businessName: existing.businessName } as any,
@@ -330,7 +329,7 @@ export class MSMEController {
       });
 
       await createAuditLog(req, {
-        action: AuditAction.SOFT_DELETE,
+        action: 'SOFT_DELETE',
         entityType: 'MSME',
         entityId: req.params.id,
         description: `Soft deleted MSME: ${existing.businessName}`,
@@ -355,16 +354,16 @@ export class MSMEController {
       const existing = await prisma.mSME.findUnique({ where: { id: req.params.id, deletedAt: null } });
       if (!existing) throw createError('MSME not found', 404, 'NOT_FOUND');
 
-      const statusMap: Record<string, WorkflowStatus> = {
-        submit: WorkflowStatus.SUBMITTED,
-        return: WorkflowStatus.RETURNED_FOR_CORRECTION,
-        verify: WorkflowStatus.VERIFIED,
-        approve: WorkflowStatus.APPROVED,
-        reject: WorkflowStatus.REJECTED,
-        archive: WorkflowStatus.ARCHIVED,
+      const statusMap: Record<string, string> = {
+        submit: 'SUBMITTED',
+        return: 'RETURNED_FOR_CORRECTION',
+        verify: 'VERIFIED',
+        approve: 'APPROVED',
+        reject: 'REJECTED',
+        archive: 'ARCHIVED',
       };
 
-      const newStatus = statusMap[action];
+      const newStatus = statusMap[action] as any;
 
       await prisma.$transaction([
         prisma.mSME.update({
@@ -391,7 +390,7 @@ export class MSMEController {
       ]);
 
       await createAuditLog(req, {
-        action: AuditAction.APPROVE,
+        action: 'APPROVE',
         entityType: 'MSME',
         entityId: req.params.id,
         description: `Workflow action '${action}' on MSME: ${existing.businessName}`,
@@ -469,7 +468,13 @@ export class MSMEController {
         'GPS Latitude', 'GPS Longitude', 'Created At',
       ].join(',');
 
-      const csvRows = msmes.map(m => [
+      await createAuditLog(req, {
+        action: 'EXPORT',
+        entityType: 'MSME',
+        description: `Exported ${msmes.length} MSME records`,
+      });
+
+      const csvRows = msmes.map((m: any) => [
         m.id, `"${m.businessName}"`, m.registrationNumber || '', m.taxIdentificationNumber || '',
         m.businessType, m.msmeCategory, m.formalityStatus, m.sector?.name || '', m.county.name,
         m.district?.name || '', m.cityTownCommunity || '', `"${m.physicalAddress || ''}"`,
@@ -479,12 +484,6 @@ export class MSMEController {
         m.businessStage || '', m.workflowStatus, m.gpsLatitude || '', m.gpsLongitude || '',
         m.createdAt.toISOString(),
       ].join(','));
-
-      await createAuditLog(req, {
-        action: AuditAction.EXPORT,
-        entityType: 'MSME',
-        description: `Exported ${msmes.length} MSME records`,
-      });
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=msmes-export-${Date.now()}.csv`);

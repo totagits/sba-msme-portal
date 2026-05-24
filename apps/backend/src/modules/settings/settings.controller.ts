@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
 
 const settingSchema = z.object({ value: z.string() });
@@ -14,7 +13,7 @@ export class SettingsController {
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const settings = await prisma.systemSetting.findMany({ orderBy: [{ category: 'asc' }, { key: 'asc' }] });
-      const grouped = settings.reduce((acc, s) => { const cat = s.category || 'general'; if (!acc[cat]) acc[cat] = []; acc[cat].push(s); return acc; }, {} as Record<string, typeof settings>);
+      const grouped = settings.reduce((acc: any, s: any) => { const cat = s.category || 'general'; if (!acc[cat]) acc[cat] = []; acc[cat].push(s); return acc; }, {} as Record<string, typeof settings>);
       res.json({ success: true, data: grouped });
     } catch (err) { next(err); }
   }
@@ -25,7 +24,7 @@ export class SettingsController {
       const setting = await prisma.systemSetting.findUnique({ where: { key: req.params.key } });
       if (!setting) throw createError('Setting not found', 404, 'NOT_FOUND');
       const updated = await prisma.systemSetting.update({ where: { key: req.params.key }, data: { value } });
-      await createAuditLog(req, { action: AuditAction.UPDATE, entityType: 'Setting', entityId: req.params.key, description: `Updated setting: ${req.params.key}` });
+      await createAuditLog(req, { action: 'UPDATE', entityType: 'Setting', entityId: req.params.key, description: `Updated setting: ${req.params.key}` });
       res.json({ success: true, data: updated });
     } catch (err) { next(err); }
   }

@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
 
 const createUserSchema = z.object({
@@ -70,9 +69,9 @@ export class UsersController {
       const roles = await prisma.role.findMany({ where: { name: { in: roleNames as any[] } } });
       const user = await prisma.user.create({
         data: { email: email.toLowerCase(), firstName, lastName, phone, countyId: countyId || null, passwordHash, status: 'ACTIVE',
-          userRoles: { create: roles.map(r => ({ roleId: r.id, grantedBy: req.user!.userId })) } },
+          userRoles: { create: roles.map((r: any) => ({ roleId: r.id, grantedBy: req.user!.userId })) } },
         include: { userRoles: { include: { role: true } } } });
-      await createAuditLog(req, { action: AuditAction.CREATE, entityType: 'User', entityId: user.id, description: `Created user: ${user.email}` });
+      await createAuditLog(req, { action: 'CREATE', entityType: 'User', entityId: user.id, description: `Created user: ${user.email}` });
       const { passwordHash: _, ...safeUser } = user as any;
       res.status(201).json({ success: true, data: safeUser });
     } catch (err) { next(err); }
@@ -84,7 +83,7 @@ export class UsersController {
       const user = await prisma.user.findUnique({ where: { id: req.params.id, deletedAt: null } });
       if (!user) throw createError('User not found', 404, 'NOT_FOUND');
       const updated = await prisma.user.update({ where: { id: req.params.id }, data: { ...data, ...(data.status === 'ACTIVE' ? { failedLoginAttempts: 0, lockedUntil: null } : {}) } });
-      await createAuditLog(req, { action: AuditAction.UPDATE, entityType: 'User', entityId: user.id, description: `Updated user: ${user.email}` });
+      await createAuditLog(req, { action: 'UPDATE', entityType: 'User', entityId: user.id, description: `Updated user: ${user.email}` });
       const { passwordHash: _, ...safeUser } = updated as any;
       res.json({ success: true, data: safeUser });
     } catch (err) { next(err); }
@@ -98,9 +97,9 @@ export class UsersController {
       const roles = await prisma.role.findMany({ where: { name: { in: roleNames as any[] } } });
       await prisma.$transaction([
         prisma.userRole.deleteMany({ where: { userId: req.params.id } }),
-        prisma.userRole.createMany({ data: roles.map(r => ({ userId: req.params.id, roleId: r.id, grantedBy: req.user!.userId })) }),
+        prisma.userRole.createMany({ data: roles.map((r: any) => ({ userId: req.params.id, roleId: r.id, grantedBy: req.user!.userId })) }),
       ]);
-      await createAuditLog(req, { action: AuditAction.PERMISSION_CHANGE, entityType: 'User', entityId: user.id, description: `Updated roles for: ${user.email}` });
+      await createAuditLog(req, { action: 'PERMISSION_CHANGE', entityType: 'User', entityId: user.id, description: `Updated roles for: ${user.email}` });
       res.json({ success: true, message: 'Roles updated' });
     } catch (err) { next(err); }
   }
@@ -111,7 +110,7 @@ export class UsersController {
       if (!user) throw createError('User not found', 404, 'NOT_FOUND');
       if (req.params.id === req.user!.userId) throw createError('Cannot delete your own account', 400, 'SELF_DELETE');
       await prisma.user.update({ where: { id: req.params.id }, data: { deletedAt: new Date(), status: 'SUSPENDED' } });
-      await createAuditLog(req, { action: AuditAction.DELETE, entityType: 'User', entityId: user.id, description: `Deleted user: ${user.email}` });
+      await createAuditLog(req, { action: 'DELETE', entityType: 'User', entityId: user.id, description: `Deleted user: ${user.email}` });
       res.json({ success: true, message: 'User deleted' });
     } catch (err) { next(err); }
   }

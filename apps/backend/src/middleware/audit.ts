@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma';
-import { AuditAction } from '@prisma/client';
+type AuditAction = string;
 
 export interface AuditContext {
-  action: AuditAction;
+  action: string;
   entityType?: string;
   entityId?: string;
   description?: string;

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction, WorkflowStatus, Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 const bdspSchema = z.object({
@@ -31,17 +30,17 @@ const bdspSchema = z.object({
   notes: z.string().optional(),
 });
 
-function buildBDSPWhere(query: Record<string, string>): Prisma.BDSPWhereInput {
-  const where: Prisma.BDSPWhereInput = { deletedAt: null };
+function buildBDSPWhere(query: Record<string, string>): any {
+  const where: any = { deletedAt: null };
   if (query.search) where.OR = [
     { providerName: { contains: query.search, mode: 'insensitive' } },
     { contactPerson: { contains: query.search, mode: 'insensitive' } },
     { phone: { contains: query.search } },
   ];
   if (query.countyId) where.countyId = query.countyId;
-  if (query.providerType) where.providerType = query.providerType as any;
-  if (query.workflowStatus) where.workflowStatus = query.workflowStatus as WorkflowStatus;
-  if (query.availabilityStatus) where.availabilityStatus = query.availabilityStatus as any;
+  if (query.providerType) where.providerType = query.providerType;
+  if (query.workflowStatus) where.workflowStatus = query.workflowStatus;
+  if (query.availabilityStatus) where.availabilityStatus = query.availabilityStatus;
   if (query.sectorId) where.sectorId = query.sectorId;
   return where;
 }
@@ -78,8 +77,8 @@ export class BDSPController {
       const data = bdspSchema.parse(req.body);
       const duplicate = await prisma.bDSP.findFirst({ where: { providerName: { equals: data.providerName, mode: 'insensitive' }, countyId: data.countyId, deletedAt: null } });
       if (duplicate) { res.status(409).json({ success: false, error: { message: 'Potential duplicate BDSP', code: 'DUPLICATE_DETECTED', duplicateId: duplicate.id } }); return; }
-      const bdsp = await prisma.bDSP.create({ data: { ...data, createdById: req.user!.userId, workflowStatus: WorkflowStatus.DRAFT } });
-      await createAuditLog(req, { action: AuditAction.CREATE, entityType: 'BDSP', entityId: bdsp.id, description: `Created BDSP: ${bdsp.providerName}` });
+      const bdsp = await prisma.bDSP.create({ data: { ...data, createdById: req.user!.userId, workflowStatus: 'DRAFT' } });
+      await createAuditLog(req, { action: 'CREATE', entityType: 'BDSP', entityId: bdsp.id, description: `Created BDSP: ${bdsp.providerName}` });
       res.status(201).json({ success: true, data: bdsp });
     } catch (err) { next(err); }
   }
@@ -90,7 +89,7 @@ export class BDSPController {
       if (!existing) throw createError('BDSP not found', 404, 'NOT_FOUND');
       const data = bdspSchema.partial().parse(req.body);
       const bdsp = await prisma.bDSP.update({ where: { id: req.params.id }, data: { ...data, updatedById: req.user!.userId } });
-      await createAuditLog(req, { action: AuditAction.UPDATE, entityType: 'BDSP', entityId: bdsp.id, description: `Updated BDSP: ${bdsp.providerName}` });
+      await createAuditLog(req, { action: 'UPDATE', entityType: 'BDSP', entityId: bdsp.id, description: `Updated BDSP: ${bdsp.providerName}` });
       res.json({ success: true, data: bdsp });
     } catch (err) { next(err); }
   }
@@ -100,7 +99,7 @@ export class BDSPController {
       const existing = await prisma.bDSP.findUnique({ where: { id: req.params.id, deletedAt: null } });
       if (!existing) throw createError('BDSP not found', 404, 'NOT_FOUND');
       await prisma.bDSP.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
-      await createAuditLog(req, { action: AuditAction.SOFT_DELETE, entityType: 'BDSP', entityId: req.params.id, description: `Deleted BDSP: ${existing.providerName}` });
+      await createAuditLog(req, { action: 'SOFT_DELETE', entityType: 'BDSP', entityId: req.params.id, description: `Deleted BDSP: ${existing.providerName}` });
       res.json({ success: true, message: 'BDSP deleted' });
     } catch (err) { next(err); }
   }
@@ -110,8 +109,8 @@ export class BDSPController {
       const { action, comment } = z.object({ action: z.enum(['submit','return','verify','approve','reject','archive']), comment: z.string().optional() }).parse(req.body);
       const existing = await prisma.bDSP.findUnique({ where: { id: req.params.id, deletedAt: null } });
       if (!existing) throw createError('BDSP not found', 404, 'NOT_FOUND');
-      const statusMap: Record<string, WorkflowStatus> = { submit: 'SUBMITTED', return: 'RETURNED_FOR_CORRECTION', verify: 'VERIFIED', approve: 'APPROVED', reject: 'REJECTED', archive: 'ARCHIVED' };
-      const newStatus = statusMap[action];
+      const statusMap: Record<string, string> = { submit: 'SUBMITTED', return: 'RETURNED_FOR_CORRECTION', verify: 'VERIFIED', approve: 'APPROVED', reject: 'REJECTED', archive: 'ARCHIVED' };
+      const newStatus = statusMap[action] as any;
       await prisma.$transaction([
         prisma.bDSP.update({ where: { id: req.params.id }, data: { workflowStatus: newStatus, updatedById: req.user!.userId, ...(action === 'reject' ? { rejectionReason: comment } : {}) } }),
         prisma.workflowAction.create({ data: { bdspId: req.params.id, userId: req.user!.userId, fromStatus: existing.workflowStatus, toStatus: newStatus, comment } }),
@@ -134,8 +133,8 @@ export class BDSPController {
       const where = buildBDSPWhere(req.query as any);
       const bdsps = await prisma.bDSP.findMany({ where, take: 5000, include: { county: { select: { name: true } } } });
       const headers = ['ID','Provider Name','Type','County','Phone','Email','Years Exp','Staff Capacity','Status','Created At'].join(',');
-      const rows = bdsps.map(b => [b.id, `"${b.providerName}"`, b.providerType, b.county?.name || '', b.phone || '', b.email || '', b.yearsOfExperience || '', b.staffCapacity || '', b.workflowStatus, b.createdAt.toISOString()].join(','));
-      await createAuditLog(req, { action: AuditAction.EXPORT, entityType: 'BDSP', description: `Exported ${bdsps.length} BDSP records` });
+      await createAuditLog(req, { action: 'EXPORT', entityType: 'BDSP', description: `Exported ${bdsps.length} BDSP records` });
+      const rows = bdsps.map((b: any) => [b.id, `"${b.providerName}"`, b.providerType, b.county?.name || '', b.phone || '', b.email || '', b.yearsOfExperience || '', b.staffCapacity || '', b.workflowStatus, b.createdAt.toISOString()].join(','));
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=bdsps-export-${Date.now()}.csv`);
       res.send([headers, ...rows].join('\n'));

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
 
 const syncRecordSchema = z.object({
@@ -28,7 +27,7 @@ export class SyncController {
               results.push({ localId: record.localId, status: 'DUPLICATE', serverRecordId: duplicate.id });
               continue;
             }
-            const msme = await prisma.mSME.create({ data: { ...payload, createdById: req.user!.userId } });
+            const msme = await prisma.mSME.create({ data: { ...(payload as any), createdById: req.user!.userId } });
             serverRecordId = msme.id;
           }
           results.push({ localId: record.localId, status: 'SYNCED', serverRecordId });
@@ -37,7 +36,7 @@ export class SyncController {
         }
       }
 
-      await createAuditLog(req, { action: AuditAction.SYNC, description: `Synced ${records.length} offline records` });
+      await createAuditLog(req, { action: 'SYNC', description: `Synced ${records.length} offline records` });
       res.json({ success: true, data: { results, synced: results.filter(r => r.status === 'SYNCED').length, failed: results.filter(r => r.status === 'FAILED').length, duplicates: results.filter(r => r.status === 'DUPLICATE').length } });
     } catch (err) { next(err); }
   }

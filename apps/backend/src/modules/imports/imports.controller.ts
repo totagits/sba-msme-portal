@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import path from 'path';
 import fs from 'fs';
@@ -56,7 +55,7 @@ export class ImportsController {
 
       try { fs.unlinkSync(filePath); } catch {}
 
-      await createAuditLog(req, { action: AuditAction.IMPORT, entityType: 'MSME', entityId: batch.id, description: `Imported ${successRows} MSMEs from ${req.file.originalname}` });
+      await createAuditLog(req, { action: 'IMPORT', entityType: 'MSME', entityId: batch.id, description: `Imported ${successRows} MSMEs from ${req.file.originalname}` });
       res.json({ success: true, data: { batchId: batch.id, totalRows: rows.length, successRows, failedRows, duplicateRows } });
     } catch (err) { next(err); }
   }

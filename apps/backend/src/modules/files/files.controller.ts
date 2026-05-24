@@ -4,7 +4,6 @@ import fs from 'fs';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import { config } from '../../config';
 
 export class FilesController {
@@ -18,7 +17,7 @@ export class FilesController {
       } else if (bdspId) {
         await prisma.bDSPDocument.create({ data: { bdspId, documentType: documentType || 'OTHER', fileName: req.file.originalname, fileUrl, fileSize: req.file.size, mimeType: req.file.mimetype, uploadedById: req.user!.userId } });
       }
-      await createAuditLog(req, { action: AuditAction.CREATE, entityType: 'File', description: `Uploaded file: ${req.file.originalname}` });
+      await createAuditLog(req, { action: 'CREATE', entityType: 'File', description: `Uploaded file: ${req.file.originalname}` });
       res.json({ success: true, data: { url: fileUrl, fileName: req.file.originalname, size: req.file.size } });
     } catch (err) { next(err); }
   }
@@ -27,7 +26,7 @@ export class FilesController {
     try {
       const filePath = path.resolve(config.upload.dir, req.params.filename);
       if (!fs.existsSync(filePath)) throw createError('File not found', 404, 'NOT_FOUND');
-      await createAuditLog(req, { action: AuditAction.DOWNLOAD, entityType: 'File', description: `Downloaded: ${req.params.filename}` });
+      await createAuditLog(req, { action: 'DOWNLOAD', entityType: 'File', description: `Downloaded: ${req.params.filename}` });
       res.sendFile(filePath);
     } catch (err) { next(err); }
   }

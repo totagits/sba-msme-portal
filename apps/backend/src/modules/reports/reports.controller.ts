@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 import { createError } from '../../middleware/errorHandler';
 import { createAuditLog } from '../../middleware/audit';
-import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
 
 const reportSchema = z.object({
@@ -55,13 +54,13 @@ export class ReportsController {
       ]);
 
       const counties = await prisma.county.findMany({ select: { id: true, name: true } });
-      const countyBreakdown = await Promise.all(counties.map(async c => ({
+      const countyBreakdown = await Promise.all(counties.map(async (c: any) => ({
         county: c.name, total: await prisma.mSME.count({ where: { countyId: c.id, deletedAt: null } }),
         approved: await prisma.mSME.count({ where: { countyId: c.id, deletedAt: null, workflowStatus: 'APPROVED' } }),
       })));
 
       const sectors = await prisma.sector.findMany({ select: { id: true, name: true } });
-      const sectorBreakdown = await Promise.all(sectors.map(async s => ({
+      const sectorBreakdown = await Promise.all(sectors.map(async (s: any) => ({
         sector: s.name, total: await prisma.mSME.count({ where: { sectorId: s.id, deletedAt: null } }),
       })));
 
@@ -72,7 +71,7 @@ export class ReportsController {
 
       const report = await prisma.report.create({ data: { title, reportType, period, countyId, sectorId, filters: filters as any, summary: summary as any, generatedById: req.user!.userId } });
 
-      await createAuditLog(req, { action: AuditAction.CREATE, entityType: 'Report', entityId: report.id, description: `Generated report: ${title}` });
+      await createAuditLog(req, { action: 'CREATE', entityType: 'Report', entityId: report.id, description: `Generated report: ${title}` });
       res.status(201).json({ success: true, data: { ...report, summary } });
     } catch (err) { next(err); }
   }
@@ -88,7 +87,7 @@ export class ReportsController {
       csv += `Youth-Led,${summary?.youthLed || 0}\nWomen-Led,${summary?.womenLed || 0}\nTotal BDSPs,${summary?.totalBDSPs || 0}\n\n`;
       csv += 'County,Total MSMEs,Approved\n';
       (summary?.countyBreakdown || []).forEach((c: any) => { csv += `${c.county},${c.total},${c.approved}\n`; });
-      await createAuditLog(req, { action: AuditAction.EXPORT, entityType: 'Report', entityId: req.params.id, description: `Exported report as CSV` });
+      await createAuditLog(req, { action: 'EXPORT', entityType: 'Report', entityId: req.params.id, description: `Exported report as CSV` });
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=report-${report.id}.csv`);
       res.send(csv);
