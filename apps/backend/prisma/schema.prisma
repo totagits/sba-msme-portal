@@ -1,0 +1,980 @@
+// This is your Prisma schema file for the SBA MSME Online Database and Reporting Portal
+// Liberia Ministry of Commerce and Industry — Bureau of Small Business Administration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  LOCKED
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  SBA_ADMIN
+  COUNTY_SUPERVISOR
+  DATA_ENTRY_OFFICER
+  INSPECTOR
+  DATA_ANALYST
+  PARTNER_VIEWER
+  FINANCIAL_INSTITUTION_VIEWER
+  MSME_OWNER
+  AUDITOR
+}
+
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  CORPORATION
+  COOPERATIVE
+  ASSOCIATION
+  INFORMAL_ENTERPRISE
+}
+
+enum MSMECategory {
+  MICRO
+  SMALL
+  MEDIUM
+}
+
+enum FormalityStatus {
+  REGISTERED
+  UNREGISTERED
+  PENDING_REGISTRATION
+}
+
+enum BusinessStage {
+  IDEA
+  STARTUP
+  EARLY_GROWTH
+  GROWTH
+  MATURE
+}
+
+enum WorkflowStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  RETURNED_FOR_CORRECTION
+  VERIFIED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum BDSPType {
+  CONSULTANT
+  TRAINING_INSTITUTION
+  INCUBATOR
+  ACCELERATOR
+  FINANCIAL_INSTITUTION
+  NGO
+  COOPERATIVE_SUPPORT
+  MENTOR
+  TECHNOLOGY_PROVIDER
+  MARKET_LINKAGE
+  LEGAL_ACCOUNTING
+}
+
+enum OpportunityType {
+  FINANCING
+  TRAINING
+  GRANT
+  PROCUREMENT
+  MARKET_LINKAGE
+  MENTORSHIP
+  EQUIPMENT_SUPPORT
+}
+
+enum OpportunityStatus {
+  DRAFT
+  OPEN
+  MATCHED
+  UNDER_REVIEW
+  AWARDED
+  CLOSED
+}
+
+enum MatchStatus {
+  EXPRESSED_INTEREST
+  SHORTLISTED
+  AWARDED
+  REJECTED
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  CONFLICT
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum NotificationType {
+  RECORD_SUBMITTED
+  RECORD_ASSIGNED
+  RECORD_RETURNED
+  RECORD_APPROVED
+  RECORD_REJECTED
+  DUPLICATE_DETECTED
+  SYNC_FAILURE
+  REPORT_GENERATED
+  USER_INVITED
+  PASSWORD_RESET
+  OPPORTUNITY_MATCH
+  GENERAL
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  LOGIN_LOCKED
+  CREATE
+  UPDATE
+  DELETE
+  SOFT_DELETE
+  RESTORE
+  EXPORT
+  IMPORT
+  DOWNLOAD
+  APPROVE
+  REJECT
+  VERIFY
+  ASSIGN
+  INVITE
+  PASSWORD_CHANGE
+  PERMISSION_CHANGE
+  SYNC
+}
+
+enum DigitalReadiness {
+  NONE
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum RevenueRange {
+  UNDER_50K
+  FROM_50K_TO_200K
+  FROM_200K_TO_500K
+  FROM_500K_TO_1M
+  ABOVE_1M
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  SEASONAL
+}
+
+enum DocumentType {
+  BUSINESS_REGISTRATION
+  TAX_DOCUMENT
+  VERIFICATION_PHOTO
+  PRODUCT_IMAGE
+  BDSP_CERTIFICATION
+  IDENTITY_DOCUMENT
+  OTHER
+}
+
+enum ProductAvailability {
+  AVAILABLE
+  OUT_OF_STOCK
+  SEASONAL
+  DISCONTINUED
+}
+
+// ============================================================
+// CORE USER & ACCESS CONTROL
+// ============================================================
+
+model User {
+  id                   String     @id @default(uuid())
+  email                String     @unique
+  passwordHash         String
+  firstName            String
+  lastName             String
+  phone                String?
+  status               UserStatus @default(PENDING)
+  failedLoginAttempts  Int        @default(0)
+  lockedUntil          DateTime?
+  lastLoginAt          DateTime?
+  invitedBy            String?
+  invitedAt            DateTime?
+  inviteToken          String?    @unique
+  inviteTokenExpiry    DateTime?
+  passwordResetToken   String?    @unique
+  resetTokenExpiry     DateTime?
+  profileImageUrl      String?
+  countyId             String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deletedAt            DateTime?
+
+  county         County?        @relation(fields: [countyId], references: [id])
+  userRoles      UserRole[]
+  loginHistory   LoginHistory[]
+  notifications  Notification[] @relation("UserNotifications")
+  auditLogs      AuditLog[]     @relation("UserAuditLogs")
+  createdMSMEs   MSME[]         @relation("MSMECreatedBy")
+  updatedMSMEs   MSME[]         @relation("MSMEUpdatedBy")
+  createdBDSPs   BDSP[]         @relation("BDSPCreatedBy")
+  updatedBDSPs   BDSP[]         @relation("BDSPUpdatedBy")
+  verifications  VerificationVisit[] @relation("VerificationOfficer")
+  workflowActions WorkflowAction[]
+  importBatches  ImportBatch[]
+  reports        Report[]       @relation("ReportGeneratedBy")
+  offlineSessions FieldCollectionSession[]
+
+  @@index([email])
+  @@index([status])
+  @@index([countyId])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        RoleName @unique
+  displayName String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@index([resource])
+  @@map("permissions")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  grantedBy String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model LoginHistory {
+  id         String   @id @default(uuid())
+  userId     String
+  ipAddress  String?
+  userAgent  String?
+  success    Boolean
+  failReason String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("login_history")
+}
+
+// ============================================================
+// GEOGRAPHIC / MASTER DATA
+// ============================================================
+
+model County {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  capital   String?
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  districts District[]
+  users     User[]
+  msmes     MSME[]
+  bdsps     BDSP[]
+  opportunities Opportunity[]
+
+  @@map("counties")
+}
+
+model District {
+  id        String   @id @default(uuid())
+  name      String
+  countyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  county County @relation(fields: [countyId], references: [id])
+  msmes  MSME[]
+  bdsps  BDSP[]
+
+  @@unique([name, countyId])
+  @@index([countyId])
+  @@map("districts")
+}
+
+model Sector {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subsectors Subsector[]
+  msmes      MSME[]
+  bdsps      BDSP[]     @relation("BDSPSector")
+
+  @@map("sectors")
+}
+
+model Subsector {
+  id        String   @id @default(uuid())
+  name      String
+  sectorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sector Sector @relation(fields: [sectorId], references: [id])
+  msmes  MSME[]
+
+  @@unique([name, sectorId])
+  @@index([sectorId])
+  @@map("subsectors")
+}
+
+// ============================================================
+// MSME REGISTRY
+// ============================================================
+
+model MSME {
+  id                     String          @id @default(uuid())
+  businessName           String
+  registrationNumber     String?         @unique
+  taxIdentificationNumber String?        @unique
+  businessType           BusinessType
+  msmeCategory           MSMECategory
+  formalityStatus        FormalityStatus
+  sectorId               String?
+  subsectorId            String?
+  countyId               String
+  districtId             String?
+  cityTownCommunity      String?
+  physicalAddress        String?
+  gpsLatitude            Float?
+  gpsLongitude           Float?
+  contactPerson          String?
+  phone                  String?
+  email                  String?
+  website                String?
+
+  // Owner information
+  ownerName              String?
+  ownerGender            String?
+  ownerAge               Int?
+  ownerNationality       String?
+  isYouthLed             Boolean         @default(false)
+  isWomenLed             Boolean         @default(false)
+  hasDisabilityInclusion Boolean         @default(false)
+  ownershipStructure     String?
+
+  // Employment
+  numberOfEmployees      Int?
+  numberOfFemaleEmployees Int?
+  numberOfYouthEmployees Int?
+
+  // Business metrics
+  annualRevenueRange     RevenueRange?
+  businessStage          BusinessStage?
+  digitalReadiness       DigitalReadiness @default(NONE)
+
+  // Needs assessment
+  financingNeeds         String[]
+  trainingNeeds          String[]
+  marketAccessNeeds      String[]
+  equipmentNeeds         String[]
+  productsServices       String?
+
+  // Workflow
+  workflowStatus         WorkflowStatus  @default(DRAFT)
+  verificationStatus     String?
+  dataSource             String?
+  notes                  String?
+  rejectionReason        String?
+  correctionComments     String?
+
+  // Meta
+  createdById            String?
+  updatedById            String?
+  verifiedById           String?
+  approvedById           String?
+  assignedToId           String?
+  verifiedAt             DateTime?
+  approvedAt             DateTime?
+  importBatchId          String?
+
+  // Soft delete
+  deletedAt              DateTime?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  county       County      @relation(fields: [countyId], references: [id])
+  district     District?   @relation(fields: [districtId], references: [id])
+  sector       Sector?     @relation(fields: [sectorId], references: [id])
+  subsector    Subsector?  @relation(fields: [subsectorId], references: [id])
+  createdBy    User?       @relation("MSMECreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?       @relation("MSMEUpdatedBy", fields: [updatedById], references: [id])
+
+  owners           MSMEOwner[]
+  products         MSMEProduct[]
+  documents        MSMEDocument[]
+  verifications    VerificationVisit[]
+  workflowActions  WorkflowAction[]
+  opportunityMatches OpportunityMatch[]
+  importBatch      ImportBatch?        @relation(fields: [importBatchId], references: [id])
+  offlineRecords   OfflineSyncRecord[]
+
+  @@index([countyId])
+  @@index([sectorId])
+  @@index([workflowStatus])
+  @@index([msmeCategory])
+  @@index([isYouthLed])
+  @@index([isWomenLed])
+  @@index([formalityStatus])
+  @@index([deletedAt])
+  @@index([createdAt])
+  @@map("msmes")
+}
+
+model MSMEOwner {
+  id          String   @id @default(uuid())
+  msmeId      String
+  name        String
+  gender      String?
+  age         Int?
+  phone       String?
+  email       String?
+  role        String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  msme MSME @relation(fields: [msmeId], references: [id], onDelete: Cascade)
+
+  @@index([msmeId])
+  @@map("msme_owners")
+}
+
+model MSMEProduct {
+  id               String              @id @default(uuid())
+  msmeId           String
+  name             String
+  category         String?
+  description      String?
+  priceRange       String?
+  unitOfMeasure    String?
+  productionCapacity String?
+  countyOfProduction String?
+  availability     ProductAvailability @default(AVAILABLE)
+  imageUrl         String?
+  marketReadiness  Boolean             @default(false)
+  exportReadiness  Boolean             @default(false)
+  isApproved       Boolean             @default(false)
+  approvedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  deletedAt        DateTime?
+
+  msme MSME @relation(fields: [msmeId], references: [id], onDelete: Cascade)
+
+  @@index([msmeId])
+  @@index([isApproved])
+  @@map("msme_products")
+}
+
+model MSMEDocument {
+  id           String       @id @default(uuid())
+  msmeId       String
+  documentType DocumentType
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  uploadedById String?
+  isVerified   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  msme MSME @relation(fields: [msmeId], references: [id], onDelete: Cascade)
+
+  @@index([msmeId])
+  @@map("msme_documents")
+}
+
+// ============================================================
+// BDSP REGISTRY
+// ============================================================
+
+model BDSP {
+  id                   String         @id @default(uuid())
+  providerName         String
+  providerType         BDSPType
+  registrationStatus   FormalityStatus @default(REGISTERED)
+  areaOfExpertise      String[]
+  servicesOffered      String[]
+  countiesServed       String[]
+  contactPerson        String?
+  phone                String?
+  email                String?
+  website              String?
+  physicalAddress      String?
+  gpsLatitude          Float?
+  gpsLongitude         Float?
+  yearsOfExperience    Int?
+  targetBeneficiaries  String?
+  staffCapacity        Int?
+  pastAssignments      String?
+  certifications       String[]
+  servicePricingModel  String?
+  availabilityStatus   AvailabilityStatus @default(AVAILABLE)
+  workflowStatus       WorkflowStatus @default(DRAFT)
+  notes                String?
+  rejectionReason      String?
+
+  sectorId             String?
+  countyId             String?
+  createdById          String?
+  updatedById          String?
+  importBatchId        String?
+
+  deletedAt            DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  sector    Sector?   @relation("BDSPSector", fields: [sectorId], references: [id])
+  county    County?   @relation(fields: [countyId], references: [id])
+  createdBy User?     @relation("BDSPCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?     @relation("BDSPUpdatedBy", fields: [updatedById], references: [id])
+
+  services        BDSPService[]
+  documents       BDSPDocument[]
+  workflowActions WorkflowAction[]
+  verifications   VerificationVisit[]
+  importBatch     ImportBatch?     @relation(fields: [importBatchId], references: [id])
+
+  @@index([countyId])
+  @@index([sectorId])
+  @@index([workflowStatus])
+  @@index([providerType])
+  @@index([deletedAt])
+  @@map("bdsps")
+}
+
+model BDSPService {
+  id          String   @id @default(uuid())
+  bdspId      String
+  name        String
+  description String?
+  targetGroup String?
+  duration    String?
+  capacity    Int?
+  fee         Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bdsp BDSP @relation(fields: [bdspId], references: [id], onDelete: Cascade)
+
+  @@index([bdspId])
+  @@map("bdsp_services")
+}
+
+model BDSPDocument {
+  id           String       @id @default(uuid())
+  bdspId       String
+  documentType DocumentType
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  mimeType     String?
+  uploadedById String?
+  isVerified   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  bdsp BDSP @relation(fields: [bdspId], references: [id], onDelete: Cascade)
+
+  @@index([bdspId])
+  @@map("bdsp_documents")
+}
+
+// ============================================================
+// VERIFICATION AND WORKFLOW
+// ============================================================
+
+model VerificationVisit {
+  id                String   @id @default(uuid())
+  msmeId            String?
+  bdspId            String?
+  officerId         String
+  scheduledDate     DateTime?
+  visitDate         DateTime?
+  gpsLatitude       Float?
+  gpsLongitude      Float?
+  businessExists    Boolean?
+  ownershipConfirmed Boolean?
+  locationConfirmed Boolean?
+  notes             String?
+  findings          String?
+  outcome           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  msme    MSME? @relation(fields: [msmeId], references: [id])
+  bdsp    BDSP? @relation(fields: [bdspId], references: [id])
+  officer User  @relation("VerificationOfficer", fields: [officerId], references: [id])
+
+  documents VerificationDocument[]
+
+  @@index([msmeId])
+  @@index([bdspId])
+  @@index([officerId])
+  @@map("verification_visits")
+}
+
+model VerificationDocument {
+  id             String   @id @default(uuid())
+  visitId        String
+  fileName       String
+  fileUrl        String
+  fileSize       Int?
+  mimeType       String?
+  createdAt      DateTime @default(now())
+
+  visit VerificationVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([visitId])
+  @@map("verification_documents")
+}
+
+model WorkflowAction {
+  id           String         @id @default(uuid())
+  msmeId       String?
+  bdspId       String?
+  userId       String
+  fromStatus   WorkflowStatus?
+  toStatus     WorkflowStatus
+  comment      String?
+  assignedToId String?
+  createdAt    DateTime       @default(now())
+
+  msme MSME? @relation(fields: [msmeId], references: [id])
+  bdsp BDSP? @relation(fields: [bdspId], references: [id])
+  user User  @relation(fields: [userId], references: [id])
+
+  @@index([msmeId])
+  @@index([bdspId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("workflow_actions")
+}
+
+// ============================================================
+// OPPORTUNITIES
+// ============================================================
+
+model Opportunity {
+  id             String            @id @default(uuid())
+  title          String
+  description    String?
+  type           OpportunityType
+  status         OpportunityStatus @default(DRAFT)
+  countyId       String?
+  sectorId       String?
+  targetCategory MSMECategory?
+  deadline       DateTime?
+  amount         Float?
+  currency       String?
+  providedBy     String?
+  contactEmail   String?
+  requirements   String?
+  createdById    String?
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  county  County? @relation(fields: [countyId], references: [id])
+  matches OpportunityMatch[]
+
+  @@index([status])
+  @@index([type])
+  @@index([countyId])
+  @@map("opportunities")
+}
+
+model OpportunityMatch {
+  id            String      @id @default(uuid())
+  opportunityId String
+  msmeId        String
+  status        MatchStatus @default(EXPRESSED_INTEREST)
+  notes         String?
+  matchedAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  msme        MSME        @relation(fields: [msmeId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, msmeId])
+  @@index([msmeId])
+  @@map("opportunity_matches")
+}
+
+// ============================================================
+// OFFLINE / FIELD DATA COLLECTION
+// ============================================================
+
+model FieldCollectionSession {
+  id              String   @id @default(uuid())
+  userId          String
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  deviceInfo      Json?
+  countyId        String?
+  totalCollected  Int      @default(0)
+  totalSynced     Int      @default(0)
+  totalFailed     Int      @default(0)
+
+  user           User                @relation(fields: [userId], references: [id])
+  offlineRecords OfflineSyncRecord[]
+
+  @@index([userId])
+  @@map("field_collection_sessions")
+}
+
+model OfflineSyncRecord {
+  id           String     @id @default(uuid())
+  sessionId    String?
+  msmeId       String?
+  entityType   String
+  payload      Json
+  syncStatus   SyncStatus @default(PENDING)
+  conflictData Json?
+  errorMessage String?
+  syncedAt     DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  session FieldCollectionSession? @relation(fields: [sessionId], references: [id])
+  msme    MSME?                   @relation(fields: [msmeId], references: [id])
+
+  @@index([syncStatus])
+  @@index([sessionId])
+  @@map("offline_sync_records")
+}
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+
+model ImportBatch {
+  id              String       @id @default(uuid())
+  fileName        String
+  entityType      String
+  status          ImportStatus @default(PENDING)
+  totalRows       Int          @default(0)
+  successRows     Int          @default(0)
+  failedRows      Int          @default(0)
+  duplicateRows   Int          @default(0)
+  columnMapping   Json?
+  errorFileUrl    String?
+  rolledBackAt    DateTime?
+  uploadedById    String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  uploadedBy   User          @relation(fields: [uploadedById], references: [id])
+  errors       ImportError[]
+  msmes        MSME[]
+  bdsps        BDSP[]
+
+  @@index([status])
+  @@index([uploadedById])
+  @@map("import_batches")
+}
+
+model ImportError {
+  id          String   @id @default(uuid())
+  batchId     String
+  rowNumber   Int
+  field       String?
+  message     String
+  rawData     Json?
+  createdAt   DateTime @default(now())
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@map("import_errors")
+}
+
+// ============================================================
+// REPORTS
+// ============================================================
+
+model Report {
+  id              String   @id @default(uuid())
+  title           String
+  reportType      String
+  period          String?
+  countyId        String?
+  sectorId        String?
+  filters         Json?
+  summary         Json?
+  generatedById   String
+  fileUrl         String?
+  isPublic        Boolean  @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  generatedBy User            @relation("ReportGeneratedBy", fields: [generatedById], references: [id])
+  exports     ReportExport[]
+
+  @@index([reportType])
+  @@index([generatedById])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+model ReportExport {
+  id         String   @id @default(uuid())
+  reportId   String
+  format     String
+  fileUrl    String
+  fileSize   Int?
+  exportedBy String?
+  createdAt  DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("report_exports")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  entityType String?
+  entityId   String?
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// AUDIT LOGS
+// ============================================================
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String?
+  userEmail   String?
+  action      AuditAction
+  entityType  String?
+  entityId    String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  description String?
+  createdAt   DateTime    @default(now())
+
+  user User? @relation("UserAuditLogs", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// SYSTEM SETTINGS
+// ============================================================
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  category  String?
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@map("system_settings")
+}

@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 214 51% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 20% 93%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 0 71% 51%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 214 51% 24%;
+    --radius: 0.5rem;
+  }
+
+  * { @apply border-border; }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-muted; }
+  ::-webkit-scrollbar-thumb { @apply bg-primary-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-primary-400; }
+
+  /* Focus visible */
+  :focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2; }
+}
+
+@layer components {
+  /* ── Government Header ────────────────────────────────────── */
+  .gov-header {
+    @apply bg-primary-700 text-white shadow-nav;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5f96 100%);
+  }
+
+  /* ── Sidebar ──────────────────────────────────────────────── */
+  .sidebar {
+    @apply bg-primary-900 text-white h-screen flex flex-col;
+    width: 260px;
+    transition: width 0.25s ease;
+  }
+
+  .sidebar.collapsed { width: 72px; }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-primary-200 text-sm font-medium transition-all duration-150 hover:bg-primary-700 hover:text-white cursor-pointer select-none;
+  }
+
+  .sidebar-link.active {
+    @apply bg-primary-600 text-white shadow-sm;
+  }
+
+  .sidebar-link.active::before {
+    content: '';
+    @apply absolute left-0 w-1 h-full bg-accent rounded-r;
+  }
+
+  /* ── KPI Cards ──────────────────────────────────────────── */
+  .kpi-card {
+    @apply bg-white rounded-xl shadow-card border border-border p-6 transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+
+  .kpi-card-blue { @apply border-l-4 border-l-primary-600; }
+  .kpi-card-green { @apply border-l-4 border-l-success-600; }
+  .kpi-card-red { @apply border-l-4 border-l-accent-600; }
+  .kpi-card-amber { @apply border-l-4 border-l-warning-600; }
+
+  /* ── Status Badges ──────────────────────────────────────── */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide;
+  }
+
+  .status-draft { @apply bg-gray-100 text-gray-600; }
+  .status-submitted { @apply bg-blue-100 text-blue-700; }
+  .status-review { @apply bg-amber-100 text-amber-700; }
+  .status-verified { @apply bg-cyan-100 text-cyan-700; }
+  .status-approved { @apply bg-green-100 text-green-700; }
+  .status-rejected { @apply bg-red-100 text-red-700; }
+  .status-returned { @apply bg-purple-100 text-purple-700; }
+  .status-archived { @apply bg-gray-200 text-gray-500; }
+
+  /* ── Data Table ─────────────────────────────────────────── */
+  .data-table { @apply w-full; }
+
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted border-b border-border;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 text-sm border-b border-border transition-colors;
+  }
+
+  .data-table tr:hover td { @apply bg-primary-50; }
+  .data-table tr:last-child td { @apply border-b-0; }
+
+  /* ── Form Controls ──────────────────────────────────────── */
+  .form-input {
+    @apply w-full px-3 py-2 text-sm bg-white border border-input rounded-md shadow-sm transition-all duration-150
+    placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+
+  .form-error { @apply text-xs text-destructive mt-1 flex items-center gap-1; }
+
+  /* ── Buttons ────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all duration-150
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+    disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer whitespace-nowrap;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-700 text-white hover:bg-primary-800 active:bg-primary-900 shadow-sm px-4 py-2;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-foreground hover:bg-primary-100 border border-border px-4 py-2;
+  }
+
+  .btn-destructive {
+    @apply btn bg-destructive text-destructive-foreground hover:bg-red-800 px-4 py-2;
+  }
+
+  .btn-ghost { @apply btn hover:bg-muted px-3 py-2; }
+  .btn-sm { @apply text-xs px-3 py-1.5; }
+  .btn-lg { @apply text-base px-6 py-3; }
+
+  /* ── Page Layout ────────────────────────────────────────── */
+  .page-container { @apply p-6 max-w-screen-2xl mx-auto; }
+
+  .page-header {
+    @apply flex items-center justify-between mb-6 pb-4 border-b border-border;
+  }
+
+  .page-title { @apply text-2xl font-bold text-foreground; }
+  .page-subtitle { @apply text-sm text-muted-foreground mt-0.5; }
+
+  /* ── Cards ──────────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-xl border border-border shadow-card overflow-hidden;
+  }
+
+  .card-header { @apply px-6 py-4 border-b border-border flex items-center justify-between; }
+  .card-title { @apply text-base font-semibold text-foreground; }
+  .card-body { @apply p-6; }
+
+  /* ── Chips / Tags ───────────────────────────────────────── */
+  .chip {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .chip-blue { @apply bg-blue-100 text-blue-700; }
+  .chip-green { @apply bg-green-100 text-green-700; }
+  .chip-amber { @apply bg-amber-100 text-amber-700; }
+  .chip-red { @apply bg-red-100 text-red-700; }
+  .chip-purple { @apply bg-purple-100 text-purple-700; }
+  .chip-gray { @apply bg-gray-100 text-gray-600; }
+
+  /* ── Offline Indicator ──────────────────────────────────── */
+  .offline-banner {
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 bg-amber-600 text-white px-6 py-3 rounded-full shadow-lg text-sm font-medium flex items-center gap-2 z-50 animate-fade-in;
+  }
+
+  /* ── Print Styles ───────────────────────────────────────── */
+  @media print {
+    .sidebar, .nav-bar, .btn, .no-print { display: none !important; }
+    .page-container { padding: 0 !important; }
+    body { background: white !important; }
+  }
+
+  /* ── Government Seal Area ───────────────────────────────── */
+  .gov-seal-bar {
+    @apply bg-primary-800 text-primary-200 text-xs py-1 px-4 text-center;
+  }
+
+  /* ── Stat Progress ──────────────────────────────────────── */
+  .progress-bar {
+    @apply h-2 rounded-full bg-muted overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full bg-primary-600 transition-all duration-700 ease-out;
+  }
+
+  /* ── Map container ──────────────────────────────────────── */
+  .map-container {
+    @apply rounded-xl border border-border overflow-hidden shadow-card;
+    height: 500px;
+  }
+
+  /* ── Loading skeleton ───────────────────────────────────── */
+  .skeleton {
+    @apply animate-pulse bg-gradient-to-r from-muted via-primary-50 to-muted bg-[length:200%_100%] rounded;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}

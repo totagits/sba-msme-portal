@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+.env
+*.log
+uploads/*
+!uploads/.gitkeep
+coverage/
+.nyc_output/
+prisma/dev.db
+*.sqlite
+.DS_Store
+Thumbs.db

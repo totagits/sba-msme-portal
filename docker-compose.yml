@@ -1,0 +1,96 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL Database ─────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sba_msme_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sba_msme_portal
+      POSTGRES_USER: sba_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SBA_Liberia_2024!}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sba_admin -d sba_msme_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (for session / rate limit) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: sba_msme_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-SBA_Redis_2024}
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: sba_msme_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://sba_admin:${POSTGRES_PASSWORD:-SBA_Liberia_2024!}@db:5432/sba_msme_portal
+      JWT_SECRET: ${JWT_SECRET:-sba_jwt_super_secret_key_change_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-sba_refresh_secret_key_change_in_production}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      REDIS_URL: redis://:${REDIS_PASSWORD:-SBA_Redis_2024}@redis:6379
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 10485760
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,https://msme.sba.gov.lr
+      BCRYPT_ROUNDS: 12
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: noreply@sba.gov.lr
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend (Nginx + Vite build) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: sba_msme_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://backend:3001
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pg_data:
+    driver: local
+  uploads:
+    driver: local
