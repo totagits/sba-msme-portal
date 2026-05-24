@@ -35,6 +35,9 @@ import syncRoutes from './modules/sync/sync.routes';
 export function createApp(): Application {
   const app = express();
 
+  // Trust reverse proxy (Google Cloud Run load balancer)
+  app.set('trust proxy', 1);
+
   // ── Ensure upload directory exists ──────────────────────────────────────
   const uploadDir = path.resolve(config.upload.dir);
   if (!fs.existsSync(uploadDir)) {

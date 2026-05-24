@@ -8,7 +8,7 @@ steps:
       - '-f'
       - 'apps/frontend/Dockerfile'
       - '--build-arg'
-      - 'VITE_API_URL=https://sba-backend-800876397176.us-central1.run.app/api'
+      - 'VITE_API_URL=https://sba-backend-74ndbnfzaa-uc.a.run.app/api'
       - '.'
 images:
   - 'us-central1-docker.pkg.dev/sba-msme-portal-lr/sba-registry/frontend:latest'
