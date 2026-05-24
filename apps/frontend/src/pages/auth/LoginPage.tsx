@@ -83,11 +83,12 @@ export default function LoginPage() {
           {/* Logo / Seal area */}
           <div className="text-center mb-8">
             <Link href="/">
-              <a className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mb-4 shadow-lg hover:bg-white/15 transition-all group">
-                <div className="text-center">
-                  <div className="text-accent-400 font-black text-lg leading-tight group-hover:scale-105 transition-transform">SBA</div>
-                  <div className="text-white/60 text-xs">PORTAL</div>
-                </div>
+              <a className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 mb-4 shadow-lg hover:bg-white/10 hover:border-white/20 transition-all group overflow-hidden p-2">
+                <img 
+                  src="/images/moci-seal.png" 
+                  alt="Ministry of Commerce &amp; Industry Seal" 
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                />
               </a>
             </Link>
             <h1 className="text-white text-2xl font-bold mb-1">Welcome Back</h1>
