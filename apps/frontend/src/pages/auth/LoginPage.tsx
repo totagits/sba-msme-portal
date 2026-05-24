@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, LogIn, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, LogIn, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 
 const schema = z.object({
@@ -70,14 +70,26 @@ export default function LoginPage() {
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-5xl">
+          {/* Back button */}
+          <div className="flex justify-start mb-4">
+            <Link href="/">
+              <a className="inline-flex items-center gap-2 text-xs text-primary-300 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 shadow-sm backdrop-blur-sm group">
+                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                <span>Back to Homepage</span>
+              </a>
+            </Link>
+          </div>
+
           {/* Logo / Seal area */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mb-4 shadow-lg">
-              <div className="text-center">
-                <div className="text-accent-400 font-black text-lg leading-tight">SBA</div>
-                <div className="text-white/60 text-xs">PORTAL</div>
-              </div>
-            </div>
+            <Link href="/">
+              <a className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mb-4 shadow-lg hover:bg-white/15 transition-all group">
+                <div className="text-center">
+                  <div className="text-accent-400 font-black text-lg leading-tight group-hover:scale-105 transition-transform">SBA</div>
+                  <div className="text-white/60 text-xs">PORTAL</div>
+                </div>
+              </a>
+            </Link>
             <h1 className="text-white text-2xl font-bold mb-1">Welcome Back</h1>
             <p className="text-primary-300 text-sm">SBA MSMEs Online Database and Reporting Portal</p>
             <p className="text-primary-400 text-xs mt-1">Bureau of Small Business Administration</p>
