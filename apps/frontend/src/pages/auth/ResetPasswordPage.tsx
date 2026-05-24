@@ -11,12 +11,14 @@ const schema = z.object({
   confirm: z.string(),
 }).refine(d => d.password === d.confirm, { message: 'Passwords do not match', path: ['confirm'] });
 
+type FormData = z.infer<typeof schema>;
+
 export default function ResetPasswordPage({ token }: { token: string }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = async (data: { password: string }) => {
+  const onSubmit = async (data: FormData) => {
     try {
       await authApi.resetPassword(token, data.password);
       setDone(true);
