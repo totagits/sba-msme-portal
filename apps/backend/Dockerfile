@@ -7,8 +7,13 @@ WORKDIR /app
 # Copy backend source (includes package.json + prisma/)
 COPY apps/backend/ ./
 
-# Install deps — uses prisma@5.10.x from package.json (not npx latest)
-RUN npm install
+# Configure npm for resilient installs (retry on network errors)
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000
+
+# Install deps with retry loop to handle transient ECONNRESET errors
+RUN for i in 1 2 3; do npm install && break || { echo "npm install attempt $i failed, retrying..."; sleep 10; }; done
 
 # Prisma generate using the LOCAL installed version (avoids npx pulling Prisma 7+)
 RUN ./node_modules/.bin/prisma generate

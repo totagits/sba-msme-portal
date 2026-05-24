@@ -6,8 +6,13 @@ WORKDIR /app
 # Copy frontend source
 COPY apps/frontend/ ./
 
+# Configure npm for resilient installs (retry on network errors)
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000
+
 # Install ALL deps (including vite/tailwind devDependencies needed for build)
-RUN npm install
+RUN for i in 1 2 3; do npm install && break || { echo "npm install attempt $i failed, retrying..."; sleep 10; }; done
 
 # Accept API URL build arg
 ARG VITE_API_URL=http://localhost:3001/api
