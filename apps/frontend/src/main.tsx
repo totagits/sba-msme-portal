@@ -5,6 +5,20 @@ import { AuthProvider } from './lib/auth';
 import App from './App';
 import './index.css';
 
+// Force unregister stale PWA service workers and bypass local cache blocks
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister().then((success) => {
+        if (success) {
+          console.log('Stale PWA Service Worker unregistered successfully.');
+          window.location.reload();
+        }
+      });
+    }
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
