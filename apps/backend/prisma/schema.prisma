@@ -216,6 +216,7 @@ model User {
   firstName            String
   lastName             String
   phone                String?
+  title                String?
   status               UserStatus @default(PENDING)
   failedLoginAttempts  Int        @default(0)
   lockedUntil          DateTime?
@@ -357,7 +358,6 @@ model District {
 
   county County @relation(fields: [countyId], references: [id])
   msmes  MSME[]
-  bdsps  BDSP[]
 
   @@unique([name, countyId])
   @@index([countyId])

@@ -7,11 +7,11 @@ WORKDIR /app
 # Copy backend source (includes package.json + prisma/)
 COPY apps/backend/ ./
 
-# Install deps (no lock file in apps/backend, so use npm install)
+# Install deps — uses prisma@5.10.x from package.json (not npx latest)
 RUN npm install
 
-# Prisma generate (schema.prisma is at /app/prisma/schema.prisma)
-RUN npx prisma generate
+# Prisma generate using the LOCAL installed version (avoids npx pulling Prisma 7+)
+RUN ./node_modules/.bin/prisma generate
 
 # Build TypeScript
 RUN npm run build
@@ -32,4 +32,4 @@ RUN mkdir -p /app/uploads
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/server.js"]
