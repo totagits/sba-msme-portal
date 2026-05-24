@@ -98,7 +98,7 @@ export default function LandingPage() {
       <nav className={`landing-nav ${scrollY > 20 ? 'landing-nav--scrolled' : ''}`}>
         <div className="landing-nav-inner">
           <div className="landing-logo">
-            <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden p-0.5 mr-2">
+            <div className="w-10 h-10 rounded-full bg-white border border-white/30 flex items-center justify-center flex-shrink-0 shadow-md overflow-hidden p-0.5 mr-2">
               <img src="/images/moci-seal.png" alt="Ministry of Commerce &amp; Industry Seal" className="w-full h-full object-contain" />
             </div>
             <div>

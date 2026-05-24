@@ -83,7 +83,7 @@ export default function LoginPage() {
           {/* Logo / Seal area */}
           <div className="text-center mb-8">
             <Link href="/">
-              <a className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-4 shadow-lg hover:bg-white/10 hover:border-white/20 transition-all group overflow-hidden p-2">
+              <a className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white border border-white/20 mb-4 shadow-lg hover:shadow-xl transition-all group overflow-hidden p-1">
                 <img 
                   src="/images/moci-seal.png" 
                   alt="Ministry of Commerce &amp; Industry Seal" 

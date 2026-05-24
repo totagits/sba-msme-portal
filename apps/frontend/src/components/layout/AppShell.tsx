@@ -58,7 +58,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       {/* Logo / Branding */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-primary-700">
-        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden p-0.5">
+        <div className="w-10 h-10 rounded-full bg-white border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden p-0.5">
           <img src="/images/moci-seal.png" alt="SBA Logo" className="w-full h-full object-contain" />
         </div>
         {!collapsed && (
