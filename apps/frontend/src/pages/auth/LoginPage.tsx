@@ -32,7 +32,7 @@ export default function LoginPage() {
   const [quickLoginEmail, setQuickLoginEmail] = useState<string | null>(null);
   const { login } = useAuth();
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<LoginForm>({
     resolver: zodResolver(schema),
   });
 
@@ -50,6 +50,8 @@ export default function LoginPage() {
     try {
       setError('');
       setQuickLoginEmail(email);
+      setValue('email', email);
+      setValue('password', 'ChangeMe123!');
       await login(email, 'ChangeMe123!');
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Login failed. Please try again.');
