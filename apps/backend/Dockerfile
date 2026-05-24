@@ -1,6 +1,6 @@
 # ── Stage 1: Build ──────────────────────────────────────────
 FROM node:20-alpine AS builder
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ openssl libc6-compat
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN npm run build
 
 # ── Stage 2: Runtime ─────────────────────────────────────────
 FROM node:20-alpine
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl openssl libc6-compat
 
 WORKDIR /app
 
