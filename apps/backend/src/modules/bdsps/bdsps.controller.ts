@@ -77,7 +77,7 @@ export class BDSPController {
       const data = bdspSchema.parse(req.body);
       const duplicate = await prisma.bDSP.findFirst({ where: { providerName: { equals: data.providerName, mode: 'insensitive' }, countyId: data.countyId, deletedAt: null } });
       if (duplicate) { res.status(409).json({ success: false, error: { message: 'Potential duplicate BDSP', code: 'DUPLICATE_DETECTED', duplicateId: duplicate.id } }); return; }
-      const bdsp = await prisma.bDSP.create({ data: { ...data, createdById: req.user!.userId, workflowStatus: 'DRAFT' } });
+      const bdsp = await prisma.bDSP.create({ data: { ...data, createdById: req.user!.userId, workflowStatus: 'DRAFT' } as any });
       await createAuditLog(req, { action: 'CREATE', entityType: 'BDSP', entityId: bdsp.id, description: `Created BDSP: ${bdsp.providerName}` });
       res.status(201).json({ success: true, data: bdsp });
     } catch (err) { next(err); }
@@ -112,8 +112,8 @@ export class BDSPController {
       const statusMap: Record<string, string> = { submit: 'SUBMITTED', return: 'RETURNED_FOR_CORRECTION', verify: 'VERIFIED', approve: 'APPROVED', reject: 'REJECTED', archive: 'ARCHIVED' };
       const newStatus = statusMap[action] as any;
       await prisma.$transaction([
-        prisma.bDSP.update({ where: { id: req.params.id }, data: { workflowStatus: newStatus, updatedById: req.user!.userId, ...(action === 'reject' ? { rejectionReason: comment } : {}) } }),
-        prisma.workflowAction.create({ data: { bdspId: req.params.id, userId: req.user!.userId, fromStatus: existing.workflowStatus, toStatus: newStatus, comment } }),
+        prisma.bDSP.update({ where: { id: req.params.id }, data: { workflowStatus: newStatus, updatedById: req.user!.userId, ...(action === 'reject' ? { rejectionReason: comment } : {}) } as any }),
+        prisma.workflowAction.create({ data: { bdspId: req.params.id, userId: req.user!.userId, fromStatus: existing.workflowStatus, toStatus: newStatus, comment } as any }),
       ]);
       res.json({ success: true, message: `BDSP ${action} completed` });
     } catch (err) { next(err); }

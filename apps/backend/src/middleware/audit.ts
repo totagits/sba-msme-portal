@@ -20,7 +20,7 @@ export async function createAuditLog(
       data: {
         userId: req.user?.userId,
         userEmail: req.user?.email,
-        action: context.action,
+        action: context.action as any,
         entityType: context.entityType,
         entityId: context.entityId,
         description: context.description,

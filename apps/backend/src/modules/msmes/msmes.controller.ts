@@ -260,7 +260,7 @@ export class MSMEController {
           ...data,
           createdById: req.user!.userId,
           workflowStatus: 'DRAFT',
-        },
+        } as any,
       });
 
       await createAuditLog(req, {
@@ -375,7 +375,7 @@ export class MSMEController {
             ...(action === 'approve' ? { approvedById: req.user!.userId, approvedAt: new Date() } : {}),
             ...(action === 'reject' ? { rejectionReason: comment } : {}),
             ...(action === 'return' ? { correctionComments: comment } : {}),
-          },
+          } as any,
         }),
         prisma.workflowAction.create({
           data: {
@@ -385,7 +385,7 @@ export class MSMEController {
             toStatus: newStatus,
             comment,
             assignedToId,
-          },
+          } as any,
         }),
       ]);
 
