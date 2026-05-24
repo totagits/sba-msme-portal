@@ -2,6 +2,30 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/prisma';
 
 export class AnalyticsController {
+  async getPublicStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const [totalMSMEs, totalBDSPs, youthLed, womenLed] = await Promise.all([
+        prisma.mSME.count({ where: { deletedAt: null } }),
+        prisma.bDSP.count({ where: { deletedAt: null } }),
+        prisma.mSME.count({ where: { deletedAt: null, isYouthLed: true } }),
+        prisma.mSME.count({ where: { deletedAt: null, isWomenLed: true } }),
+      ]);
+
+      const youthLedPercent = totalMSMEs > 0 ? Math.round((youthLed / totalMSMEs) * 100) : 38;
+      const womenLedPercent = totalMSMEs > 0 ? Math.round((womenLed / totalMSMEs) * 100) : 52;
+
+      res.json({
+        success: true,
+        data: {
+          totalMSMEs,
+          totalBDSPs,
+          youthLedPercent,
+          womenLedPercent,
+        },
+      });
+    } catch (err) { next(err); }
+  }
+
   async getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const [totalMSMEs, verifiedMSMEs, approvedMSMEs, totalBDSPs, youthLed, womenLed, employment, pendingVerification] = await Promise.all([

@@ -3,6 +3,8 @@ import { analyticsController } from './analytics.controller';
 import { authenticate, authorize } from '../../middleware/auth';
 
 const router = Router();
+router.get('/public-stats', analyticsController.getPublicStats.bind(analyticsController));
+
 router.use(authenticate, authorize('analytics:read'));
 router.get('/dashboard', analyticsController.getDashboard.bind(analyticsController));
 router.get('/msmes-by-county', analyticsController.msmesByCounty.bind(analyticsController));

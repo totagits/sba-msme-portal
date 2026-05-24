@@ -76,6 +76,7 @@ export const bdspApi = {
 
 export const analyticsApi = {
   getDashboard: () => api.get('/analytics/dashboard'),
+  publicStats: () => api.get('/analytics/public-stats'),
   msmesByCounty: () => api.get('/analytics/msmes-by-county'),
   msmesBySector: () => api.get('/analytics/msmes-by-sector'),
   msmesByCategory: () => api.get('/analytics/msmes-by-category'),

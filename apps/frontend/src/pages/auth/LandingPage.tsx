@@ -52,7 +52,7 @@ export default function LandingPage() {
 
   const { data: dashboardData } = useQuery({
     queryKey: ['public-stats'],
-    queryFn: () => analyticsApi.getDashboard().then(r => r.data.data),
+    queryFn: () => analyticsApi.publicStats().then(r => r.data.data),
     retry: false,
     staleTime: 300_000,
   });
