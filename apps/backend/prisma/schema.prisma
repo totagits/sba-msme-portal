@@ -401,6 +401,7 @@ model Subsector {
 model MSME {
   id                     String          @id @default(uuid())
   businessName           String
+  tradingName            String?
   registrationNumber     String?         @unique
   taxIdentificationNumber String?        @unique
   businessType           BusinessType
@@ -414,10 +415,14 @@ model MSME {
   physicalAddress        String?
   gpsLatitude            Float?
   gpsLongitude           Float?
+  gpsAccuracy            Float?
   contactPerson          String?
   phone                  String?
   email                  String?
   website                String?
+  socialMedia            String?
+  whatsApp               String?
+  incorporationDate      DateTime?
 
   // Owner information
   ownerName              String?
@@ -428,23 +433,50 @@ model MSME {
   isWomenLed             Boolean         @default(false)
   hasDisabilityInclusion Boolean         @default(false)
   ownershipStructure     String?
+  beneficialOwnership    Json?
 
   // Employment
   numberOfEmployees      Int?
   numberOfFemaleEmployees Int?
   numberOfYouthEmployees Int?
+  numberOfDisabledEmployees Int?         @default(0)
 
   // Business metrics
   annualRevenueRange     RevenueRange?
   businessStage          BusinessStage?
   digitalReadiness       DigitalReadiness @default(NONE)
 
+  // Financial & Investment Readiness
+  hasBusinessBankAccount Boolean         @default(false)
+  keepsFormalAccounts    Boolean         @default(false)
+  usesMobileMoney        Boolean         @default(false)
+  usesPOSTerminal        Boolean         @default(false)
+  financingHistory       Json?
+  estimatedAmountNeeded  Float?
+  collateralStatus       String?
+  creditReadinessScore   Int?            @default(0)
+  investmentReadinessScore Int?          @default(0)
+
   // Needs assessment
   financingNeeds         String[]
   trainingNeeds          String[]
   marketAccessNeeds      String[]
   equipmentNeeds         String[]
+  infrastructureNeeds    String[]
+  regulatoryNeeds        String[]
+  technologyNeeds        String[]
+  mentorshipNeeds        String[]
+  productNeeds           String[]
   productsServices       String?
+  equipmentOwned         String[]
+  productionCapacity     String?
+  supplyChainData        Json?
+  customerBase           String[]
+
+  // Privacy & Consent Settings
+  consentToShareWithBanks    Boolean     @default(false)
+  consentToShareWithPartners Boolean     @default(false)
+  consentToShareWithBuyers   Boolean     @default(false)
 
   // Workflow
   workflowStatus         WorkflowStatus  @default(DRAFT)
@@ -570,6 +602,8 @@ model BDSP {
   id                   String         @id @default(uuid())
   providerName         String
   providerType         BDSPType
+  registrationNumber   String?        @unique
+  taxIdentificationNumber String?     @unique
   registrationStatus   FormalityStatus @default(REGISTERED)
   areaOfExpertise      String[]
   servicesOffered      String[]
@@ -591,6 +625,9 @@ model BDSP {
   workflowStatus       WorkflowStatus @default(DRAFT)
   notes                String?
   rejectionReason      String?
+  performanceRating    Float?         @default(0.0)
+  msmesServedCount     Int?           @default(0)
+  consentToShare       Boolean        @default(false)
 
   sectorId             String?
   countyId             String?
