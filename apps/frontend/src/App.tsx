@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Route, Switch, Redirect } from 'wouter';
 import { useAuth } from './lib/auth';
 import AppShell from './components/layout/AppShell';
@@ -64,9 +65,101 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GatewayGate({ children }: { children: React.ReactNode }) {
+  const [passcode, setPasscode] = useState('');
+  const [error, setError] = useState('');
+  const [authorized, setAuthorized] = useState(() => {
+    return localStorage.getItem('gateway_authorized') === 'true';
+  });
+
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctCode = 'LIBERIA-SBA-2026';
+    
+    if (passcode.trim().toUpperCase() === correctCode) {
+      localStorage.setItem('gateway_authorized', 'true');
+      setAuthorized(true);
+      setError('');
+    } else {
+      setError('Invalid Gateway Passcode. Please contact SBA/MoCI Administration.');
+    }
+  };
+
+  if (authorized) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex flex-col justify-between text-white font-sans p-6 select-none">
+      {/* Top Government Bar */}
+      <div className="text-center text-xs text-primary-300 font-medium tracking-wide uppercase mt-4">
+        Bureau of Small Business Administration (SBA) — Republic of Liberia
+      </div>
+
+      {/* Main Glassmorphic Gate */}
+      <div className="flex-1 flex items-center justify-center max-w-md w-full mx-auto my-8">
+        <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center relative overflow-hidden">
+          {/* Decorative glowing backdrops */}
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary-500/20 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Ministry Seal Container */}
+          <div className="w-24 h-24 rounded-full bg-white border border-white/20 p-1 flex items-center justify-center shadow-lg mb-6 overflow-hidden">
+            <img 
+              src="/images/moci-seal.png" 
+              alt="Ministry of Commerce &amp; Industry Seal" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+
+          <h2 className="text-xl font-bold text-white text-center mb-1">LMIP Secure Gateway</h2>
+          <p className="text-xs text-primary-300 text-center mb-6 leading-relaxed">
+            This is a private staging and pre-production environment. Enter the official Gateway Access Passcode below to proceed.
+          </p>
+
+          <form onSubmit={handleVerify} className="w-full space-y-4">
+            <div>
+              <label htmlFor="gate-passcode" className="block text-[11px] font-semibold uppercase text-primary-300 mb-1.5 ml-1">
+                Gateway Access Passcode
+              </label>
+              <input
+                id="gate-passcode"
+                type="password"
+                placeholder="Enter global access code"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 focus:border-white/30 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-mono tracking-widest text-center"
+                autoFocus
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-xs text-center font-medium bg-red-500/10 border border-red-500/20 py-2.5 px-3 rounded-xl">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-white hover:bg-white/95 text-primary-900 font-semibold py-3 px-4 rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+            >
+              <span>Unlock Staging Access</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center text-[10px] text-primary-400">
+        © {new Date().getFullYear()} Ministry of Commerce &amp; Industry. Unauthorized access is strictly prohibited and logged.
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <>
+    <GatewayGate>
       <OfflineIndicator />
       <Switch>
         {/* Public */}
@@ -148,6 +241,6 @@ export default function App() {
 
         <Route><Redirect to="/dashboard" /></Route>
       </Switch>
-    </>
+    </GatewayGate>
   );
 }
