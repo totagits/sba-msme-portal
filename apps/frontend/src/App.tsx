@@ -69,7 +69,7 @@ function GatewayGate({ children }: { children: React.ReactNode }) {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
   const [authorized, setAuthorized] = useState(() => {
-    return localStorage.getItem('gateway_authorized') === 'true';
+    return sessionStorage.getItem('gateway_authorized') === 'true';
   });
 
   const handleVerify = (e: React.FormEvent) => {
@@ -77,7 +77,7 @@ function GatewayGate({ children }: { children: React.ReactNode }) {
     const correctCode = 'LIBERIA-SBA-2026';
     
     if (passcode.trim().toUpperCase() === correctCode) {
-      localStorage.setItem('gateway_authorized', 'true');
+      sessionStorage.setItem('gateway_authorized', 'true');
       setAuthorized(true);
       setError('');
     } else {
