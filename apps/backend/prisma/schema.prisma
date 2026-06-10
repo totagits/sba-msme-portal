@@ -228,6 +228,8 @@ model User {
   passwordResetToken   String?    @unique
   resetTokenExpiry     DateTime?
   profileImageUrl      String?
+  emergencyContactName String?
+  emergencyContactPhone String?
   countyId             String?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt

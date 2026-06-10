@@ -6,6 +6,10 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string;
+  profileImageUrl?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   roles: string[];
   permissions: string[];
   countyId?: string;
@@ -22,6 +26,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserInfo: (updatedUser: User) => void;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
@@ -76,12 +81,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false });
   };
 
+  const updateUserInfo = (updatedUser: User) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setState(s => ({ ...s, user: updatedUser }));
+  };
+
   const hasPermission = (permission: string) => state.user?.permissions?.includes(permission) ?? false;
   const hasRole = (role: string) => state.user?.roles?.includes(role) ?? false;
   const hasAnyRole = (roles: string[]) => roles.some(r => state.user?.roles?.includes(r)) ?? false;
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, hasPermission, hasRole, hasAnyRole }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUserInfo, hasPermission, hasRole, hasAnyRole }}>
       {children}
     </AuthContext.Provider>
   );

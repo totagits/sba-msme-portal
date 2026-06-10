@@ -114,6 +114,9 @@ export class AuthController {
           lastName: true,
           phone: true,
           status: true,
+          profileImageUrl: true,
+          emergencyContactName: true,
+          emergencyContactPhone: true,
           countyId: true,
           lastLoginAt: true,
           createdAt: true,
@@ -204,6 +207,62 @@ export class AuthController {
         description: 'User changed their password',
       });
       res.json({ success: true, message: 'Password changed successfully.' });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/auth/profile:
+   *   put:
+   *     tags: [Auth]
+   *     summary: Update current user's profile info (phone, emergency contacts, profile photo)
+   */
+  async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        phone: z.string().optional().nullable(),
+        emergencyContactName: z.string().optional().nullable(),
+        emergencyContactPhone: z.string().optional().nullable(),
+        profileImageUrl: z.string().optional().nullable(),
+      });
+      const data = schema.parse(req.body);
+      const { prisma } = await import('../../config/prisma');
+      const updated = await prisma.user.update({
+        where: { id: req.user!.userId },
+        data: {
+          phone: data.phone,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone,
+          profileImageUrl: data.profileImageUrl,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          status: true,
+          profileImageUrl: true,
+          emergencyContactName: true,
+          emergencyContactPhone: true,
+          countyId: true,
+          lastLoginAt: true,
+          createdAt: true,
+          county: { select: { id: true, name: true } },
+          userRoles: {
+            include: { role: { select: { name: true, displayName: true } } },
+          },
+        },
+      });
+      await createAuditLog(req, {
+        action: 'UPDATE',
+        entityType: 'User',
+        entityId: req.user!.userId,
+        description: 'User updated their profile information',
+      });
+      res.json({ success: true, data: updated });
     } catch (err) {
       next(err);
     }
