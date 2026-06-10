@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { authApi } from '../../lib/api';
+import { authApi, filesApi } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { User as UserIcon, Save, KeyRound, Loader2, CheckCircle2, Phone, ShieldAlert, Camera } from 'lucide-react';
 
@@ -17,6 +17,25 @@ export default function ProfilePage() {
   });
   const [profileError, setProfileError] = useState('');
   const [profileSaved, setProfileSaved] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      setProfileError('');
+      const res = await filesApi.upload(file, {});
+      const uploadedUrl = res.data.data.url;
+      setProfileForm(f => ({ ...f, profileImageUrl: uploadedUrl }));
+    } catch (err: any) {
+      setProfileError(err.response?.data?.error?.message || 'Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Password Form State
   const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
@@ -117,22 +136,40 @@ export default function ProfilePage() {
 
               {/* Avatar and Info Block */}
               <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-slate-100">
-                <div className="relative group">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative group cursor-pointer w-20 h-20 rounded-full border-2 border-primary-100 shadow-sm overflow-hidden flex-shrink-0"
+                >
+                  {isUploading ? (
+                    <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white">
+                      <Loader2 size={20} className="animate-spin" />
+                    </div>
+                  ) : null}
+
                   {profileForm.profileImageUrl ? (
                     <img 
                       src={profileForm.profileImageUrl} 
                       alt="Avatar" 
-                      className="w-20 h-20 rounded-full object-cover border-2 border-primary-100 shadow-sm"
+                      className="w-full h-full object-cover"
                       onError={() => setProfileForm(f => ({ ...f, profileImageUrl: '' }))}
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary-600 to-primary-500 flex items-center justify-center text-white text-2xl font-bold border-2 border-primary-100 shadow-sm">
+                    <div className="w-full h-full bg-gradient-to-tr from-primary-600 to-primary-500 flex items-center justify-center text-white text-2xl font-bold">
                       {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera size={18} className="text-white" />
                   </div>
+
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
                 </div>
                 <div className="text-center sm:text-left">
                   <h3 className="text-lg font-bold text-slate-900">{user?.firstName} {user?.lastName}</h3>
